@@ -5,16 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>404 – Page Not Found</title>
   <style>
+
+    /*
+    ══════════════════════════════════════════════════════
+     CSS CUSTOM PROPERTIES (Variables)
+     Defined on :root so every element in the page can
+     use them via var(--name). Changing one value here
+     updates the whole design in one place.
+    ══════════════════════════════════════════════════════ */
     :root {
-      --bg:       #080818;
-      --pink:     #ff2060;
-      --pink-dim: rgba(255, 32, 96, 0.55);
-      --sky:      #00c8ff;
-      --sky-dim:  rgba(0, 200, 255, 0.45);
+      --bg:       #080818;              /* very dark navy – page background */
+      --pink:     #ff2060;              /* neon pink  – used for the "404" text and subtitle */
+      --pink-dim: rgba(255, 32, 96, 0.55);   /* semi-transparent pink for soft outer glow */
+      --sky:      #00c8ff;              /* neon cyan/sky-blue – used for brackets, divider, hint text */
+      --sky-dim:  rgba(0, 200, 255, 0.45);   /* semi-transparent cyan for soft outer glow */
     }
 
+    /*
+    ══════════════════════════════════════════════════════
+     GLOBAL RESET
+     The * selector targets every single element.
+     Removing default margin/padding gives us a blank
+     slate so browser defaults don't interfere.
+     box-sizing: border-box means padding and borders are
+     counted *inside* the declared width/height, not added
+     on top – much easier to reason about layouts.
+    ══════════════════════════════════════════════════════ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    /*
+    ══════════════════════════════════════════════════════
+     BODY – full-screen dark stage
+     • background: the near-black navy colour from :root
+     • height: 100vh  → exactly the viewport height, no scrollbar
+     • overflow: hidden → clips the matrix rain so it never
+       causes a scrollbar even if characters drift outside
+     • display/align/justify → flexbox centres the .content
+       card both horizontally and vertically
+     • font-family → monospace gives the hacker/terminal feel
+    ══════════════════════════════════════════════════════ */
     body {
       background: var(--bg);
       height: 100vh;
@@ -26,6 +55,14 @@
     }
 
     /* ── Matrix Canvas ── */
+    /*
+     The <canvas> element is where JavaScript draws the
+     falling characters. It sits behind everything else.
+     • position: fixed  → stays in place even if the page
+       were scrollable; covers the whole screen
+     • inset: 0         → shorthand for top/right/bottom/left: 0
+     • z-index: 0       → lowest layer; everything else is on top
+    */
     canvas {
       position: fixed;
       inset: 0;
@@ -33,6 +70,14 @@
     }
 
     /* ── Corner Brackets ── */
+    /*
+     Four decorative L-shaped brackets at the screen corners.
+     Each is a fixed-size square div that itself has no
+     visible content – the lines are drawn with ::before
+     and ::after pseudo-elements (see below).
+     • pointer-events: none → the brackets don't block mouse
+       clicks on anything underneath them
+    */
     .corner {
       position: fixed;
       width: 48px;
@@ -40,6 +85,17 @@
       z-index: 5;
       pointer-events: none;
     }
+
+    /*
+     ::before and ::after create TWO virtual child elements
+     inside each .corner without adding any HTML.
+     Both share these base styles:
+     • content: '' → required for pseudo-elements to appear;
+       empty string because they're purely visual shapes
+     • position: absolute → positioned relative to .corner
+     • background: cyan → the bar colour
+     • box-shadow → layered glows: tight bright glow + wider dim halo
+    */
     .corner::before,
     .corner::after {
       content: '';
@@ -47,15 +103,34 @@
       background: var(--sky);
       box-shadow: 0 0 10px var(--sky), 0 0 20px var(--sky-dim);
     }
+
+    /* ::before = the HORIZONTAL bar of the L (full width, 2 px tall) */
     .corner::before { width: 100%; height: 2px; top: 0; left: 0; }
+
+    /* ::after  = the VERTICAL bar of the L (2 px wide, full height) */
     .corner::after  { width: 2px; height: 100%; top: 0; left: 0; }
 
+    /*
+     Each .corner starts as a top-left L shape.
+     transform is used to mirror/flip it into the correct orientation:
+     • .tl → top-left    – no transform needed
+     • .tr → top-right   – flip horizontally (scaleX(-1))
+     • .bl → bottom-left – flip vertically   (scaleY(-1))
+     • .br → bottom-right– flip both axes    (scale(-1))
+    */
     .corner.tl { top: 24px; left: 24px; }
     .corner.tr { top: 24px; right: 24px; transform: scaleX(-1); }
     .corner.bl { bottom: 24px; left: 24px; transform: scaleY(-1); }
     .corner.br { bottom: 24px; right: 24px; transform: scale(-1); }
 
     /* ── Content ── */
+    /*
+     The central card that contains the 404 number, divider,
+     subtitle and hint text.
+     • z-index: 10 → sits on top of the canvas (0) and brackets (5)
+     • user-select: none → prevents the user from accidentally
+       highlighting/selecting the text when clicking around
+    */
     .content {
       position: relative;
       z-index: 10;
@@ -63,45 +138,85 @@
       user-select: none;
     }
 
+    /*
+     ── The big "404" number ──
+     • font-size: clamp(7rem, 25vw, 20rem)
+       clamp() sets a responsive size that grows with the viewport
+       but never goes below 7rem or above 20rem
+     • color: --pink → this is the FONT COLOUR of the 404
+     • text-shadow → multiple layers create the neon glow effect:
+         tight glow (10px) + medium glow (30px) + wide dim halos (80/160px)
+     • animation: flicker → references the @keyframes below;
+       runs for 7 seconds and loops forever (infinite)
+     • position: relative → required so the ::before/::after
+       glitch layers (which use position:absolute) anchor to this element
+    */
     .error-code {
       font-family: 'Courier New', Courier, monospace;
       font-size: clamp(7rem, 25vw, 20rem);
       font-weight: 900;
       line-height: 1;
       letter-spacing: 0.05em;
-      color: var(--pink);
+      color: var(--pink);               /* ← FONT COLOUR */
       text-shadow:
-        0 0 10px var(--pink),
-        0 0 30px var(--pink),
-        0 0 80px var(--pink-dim),
-        0 0 160px var(--pink-dim);
+        0 0 10px var(--pink),           /* tight bright glow */
+        0 0 30px var(--pink),           /* medium glow */
+        0 0 80px var(--pink-dim),       /* wide soft halo */
+        0 0 160px var(--pink-dim);      /* very wide outer halo */
       animation: flicker 7s infinite;
       position: relative;
     }
 
-    /* Glitch layers */
+    /*
+     ── Glitch layers on the 404 ──
+     Two "ghost" copies of the 404 text are created with
+     ::before and ::after – no extra HTML needed.
+     Both are stacked exactly over the real text (inset: 0 = all sides 0).
+     They start invisible (opacity: 0) and the glitch animations
+     flash them into view for just a fraction of a second.
+    */
     .error-code::before,
     .error-code::after {
-      content: '404';
+      content: '404';           /* the ghost text to display */
       position: absolute;
-      inset: 0;
+      inset: 0;                 /* cover the parent exactly */
       pointer-events: none;
     }
+
+    /*
+     ::before = the TOP glitch slice (cyan coloured)
+     clip-path: polygon() cuts a horizontal band from 20 %–40 %
+     of the element height so only that slice is visible.
+     The glitch-top animation briefly shifts it sideways.
+    */
     .error-code::before {
       color: var(--sky);
       clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%);
       animation: glitch-top 4s infinite;
       text-shadow: none;
-      opacity: 0;
+      opacity: 0;               /* invisible until animation triggers */
     }
+
+    /*
+     ::after = the BOTTOM glitch slice (light pink coloured)
+     clip-path cuts a band from 60 %–80 % of the element height.
+     The glitch-bot animation shifts it the opposite direction.
+    */
     .error-code::after {
       color: #ff80b0;
       clip-path: polygon(0 60%, 100% 60%, 100% 80%, 0 80%);
       animation: glitch-bot 4s infinite;
       text-shadow: none;
-      opacity: 0;
+      opacity: 0;               /* invisible until animation triggers */
     }
 
+    /*
+     ── Decorative divider line ──
+     A thin 1 px horizontal rule between the 404 and the subtitle.
+     background: linear-gradient → fades from transparent on both
+     ends to cyan in the centre, giving a "light beam" look.
+     box-shadow adds a cyan glow beneath it.
+    */
     .divider {
       width: 160px;
       height: 1px;
@@ -110,70 +225,137 @@
       box-shadow: 0 0 10px var(--sky);
     }
 
+    /*
+     ── "PAGE NOT FOUND" subtitle ──
+     • font-size: clamp() → responsive, same technique as .error-code
+     • letter-spacing: 0.5em → wide spacing for the all-caps look
+     • color: --pink → matches the 404 number colour
+     • text-shadow → subtle glow, less aggressive than the 404
+    */
     .subtitle {
       font-family: 'Courier New', Courier, monospace;
       font-size: clamp(0.85rem, 2.5vw, 1.2rem);
       letter-spacing: 0.5em;
       text-transform: uppercase;
-      color: var(--pink);
+      color: var(--pink);               /* ← FONT COLOUR (subtitle) */
       text-shadow: 0 0 12px var(--pink);
     }
 
+    /*
+     ── Small hint text at the bottom ──
+     "// this node does not exist in the grid"
+     • opacity: 0.55 → intentionally dim/faded so it doesn't compete
+       with the main content
+     • color: --sky → cyan, same as the brackets and matrix rain
+    */
     .hint {
       margin-top: 1.4rem;
       font-size: 0.65rem;
       letter-spacing: 0.25em;
       text-transform: uppercase;
-      color: var(--sky);
+      color: var(--sky);                /* ← FONT COLOUR (hint) */
       opacity: 0.55;
     }
 
-    /* ── Keyframes ── */
+    /* ══════════════════════════════════════════════════
+       @keyframes – animation sequences
+       Each @keyframes block defines what an element looks
+       like at specific percentages of its animation cycle.
+       0% = start, 100% = end, values in between are
+       automatically interpolated (tweened) by the browser.
+    ══════════════════════════════════════════════════ */
+
+    /*
+     flicker – simulates a neon tube flickering
+     The 404 is fully visible (opacity:1) for most of the 7 s cycle.
+     Between 90–92 % it briefly dips, mimicking an electrical flicker.
+    */
     @keyframes flicker {
-      0%,  89%, 91%, 93%, 100% { opacity: 1; }
-      90% { opacity: 0.75; }
-      92% { opacity: 0.9; }
+      0%,  89%, 91%, 93%, 100% { opacity: 1; }    /* fully on */
+      90% { opacity: 0.75; }                        /* slight dim */
+      92% { opacity: 0.9; }                         /* partial recovery */
     }
 
+    /*
+     glitch-top – the cyan top-slice ghost
+     Invisible (opacity:0) for 88 % of the 4 s cycle.
+     At 89 % it snaps left by 4 px, at 90 % snaps right by 4 px,
+     then disappears again – creating a very fast horizontal jitter.
+    */
     @keyframes glitch-top {
       0%,  88%, 100% { opacity: 0; transform: none; }
-      89% { opacity: 0.9; transform: translateX(-4px); }
-      90% { opacity: 0.7; transform: translateX(4px); }
-      91% { opacity: 0; transform: none; }
+      89% { opacity: 0.9; transform: translateX(-4px); }   /* jitter left */
+      90% { opacity: 0.7; transform: translateX(4px); }    /* jitter right */
+      91% { opacity: 0; transform: none; }                  /* disappear */
     }
 
+    /*
+     glitch-bot – the light-pink bottom-slice ghost
+     Same pattern as glitch-top but moves in the opposite direction
+     to create the "torn apart" glitch aesthetic.
+    */
     @keyframes glitch-bot {
       0%,  88%, 100% { opacity: 0; transform: none; }
-      89% { opacity: 0.8; transform: translateX(5px); }
-      90% { opacity: 0.6; transform: translateX(-3px); }
-      91% { opacity: 0; transform: none; }
+      89% { opacity: 0.8; transform: translateX(5px); }    /* jitter right */
+      90% { opacity: 0.6; transform: translateX(-3px); }   /* jitter left */
+      91% { opacity: 0; transform: none; }                  /* disappear */
     }
   </style>
 </head>
 <body>
 
+  <!--
+    The <canvas> covers the entire screen (position:fixed, inset:0).
+    JavaScript draws the falling matrix characters onto it every 48 ms.
+    It sits at z-index 0, behind everything else.
+  -->
   <canvas id="matrix"></canvas>
 
+  <!--
+    Four corner bracket decorations – one per screen corner.
+    The actual lines are drawn by ::before (horizontal bar)
+    and ::after (vertical bar) pseudo-elements in CSS.
+    tl/tr/bl/br classes position them and rotate via transform.
+  -->
   <div class="corner tl"></div>
   <div class="corner tr"></div>
   <div class="corner bl"></div>
   <div class="corner br"></div>
 
+  <!--
+    The central content block, centred on screen by flexbox on <body>.
+  -->
   <div class="content">
-    <div class="error-code">404</div>
-    <div class="divider"></div>
+    <div class="error-code">404</div>   <!-- big neon number with glitch layers -->
+    <div class="divider"></div>          <!-- gradient "light beam" divider line -->
     <p class="subtitle">Page Not Found</p>
     <p class="hint">// this node does not exist in the grid</p>
   </div>
 
   <script>
-    const canvas = document.getElementById('matrix');
-    const ctx    = canvas.getContext('2d');
+    /*
+    ══════════════════════════════════════════════════════
+     MATRIX RAIN – Canvas 2D drawing loop
+    ══════════════════════════════════════════════════════ */
 
+    const canvas = document.getElementById('matrix');
+    const ctx    = canvas.getContext('2d');  /* 2D drawing context */
+
+    /* Character pool – the symbols that randomly appear in the rain */
     const CHARS = '0123456789ABCDEF[]{}|/<>\\;:.,!?@#$%^&*+=~`';
-    const FONT_SIZE = 15;
+    const FONT_SIZE = 15;   /* pixel size of each character */
     let cols, drops;
 
+    /*
+     resize() – called on load and whenever the window is resized.
+     Adjusts canvas dimensions to match the viewport, then
+     recalculates:
+     • cols  → how many character columns fit across the width
+     • drops → array tracking the current Y position (in rows)
+               of the falling character in each column.
+               Initialised to a random negative value so columns
+               start at different heights (staggered entry).
+    */
     function resize() {
       canvas.width  = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -181,39 +363,60 @@
       drops = Array.from({ length: cols }, () => Math.random() * -(canvas.height / FONT_SIZE));
     }
 
+    /*
+     draw() – called every 48 ms by setInterval below.
+     Each call:
+     1. Paints a very transparent rectangle over the whole canvas.
+        Because it's nearly transparent (alpha 0.055), old characters
+        fade out gradually rather than disappearing instantly –
+        this creates the trailing "comet tail" effect.
+     2. Loops over every column and:
+        a. Picks a random character from CHARS.
+        b. Randomly decides if this character is "bright" (92 % chance).
+        c. Applies a cyan glow shadow and a random opacity for variety.
+        d. Draws the character at column x, current drop y.
+        e. If the character has scrolled below the bottom AND a random
+           threshold is passed (2.5 % chance), resets the column to the
+           top (drops[i] = 0) so a new stream starts.
+        f. Advances the drop position by a small random amount,
+           making each column fall at a slightly different speed.
+    */
     function draw() {
-      // Fade trailing characters
-      ctx.fillStyle = 'rgba(8, 8, 24, 0.055)';
+      /* Step 1 – semi-transparent fade overlay (creates the trail) */
+      ctx.fillStyle = 'rgba(8, 8, 24, 0.055)';  /* matches --bg at low opacity */
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.font = FONT_SIZE + 'px "Courier New", monospace';
 
+      /* Step 2 – draw one character per column */
       for (let i = 0; i < cols; i++) {
         const char = CHARS[Math.floor(Math.random() * CHARS.length)];
         const x = i * FONT_SIZE;
         const y = drops[i] * FONT_SIZE;
 
-        // Brightest head character
+        /* Brightest head character – most characters are bright cyan */
         const isBright = Math.random() > 0.08;
         ctx.shadowBlur   = isBright ? (Math.random() > 0.8 ? 16 : 6) : 0;
-        ctx.shadowColor  = '#00c8ff';
+        ctx.shadowColor  = '#00c8ff';  /* cyan glow – matches --sky */
         ctx.fillStyle    = isBright
-          ? `rgba(0, 200, 255, ${0.6 + Math.random() * 0.4})`
-          : `rgba(0, 150, 210, 0.3)`;
+          ? `rgba(0, 200, 255, ${0.6 + Math.random() * 0.4})`  /* bright cyan */
+          : `rgba(0, 150, 210, 0.3)`;                           /* dim cyan for variety */
 
-        ctx.fillText(char, x, y);
+        ctx.fillText(char, x, y);  /* actually paint the character */
 
+        /* Reset column to top with a small random chance after it exits the screen */
         if (y > canvas.height && Math.random() > 0.975) {
           drops[i] = 0;
         }
+        /* Advance drop position – variable speed creates organic feel */
         drops[i] += 0.35 + Math.random() * 0.35;
       }
-      ctx.shadowBlur = 0;
+      ctx.shadowBlur = 0;  /* reset shadow so it doesn't bleed into next frame */
     }
 
     resize();
-    window.addEventListener('resize', resize);
-    setInterval(draw, 48);
+    window.addEventListener('resize', resize);  /* re-fit canvas if window changes size */
+    setInterval(draw, 48);                       /* ~20 fps drawing loop */
   </script>
 </body>
 </html>
