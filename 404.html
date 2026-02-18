@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 – Page Not Found</title>
+  <style>
+    :root {
+      --bg:       #080818;
+      --pink:     #ff2060;
+      --pink-dim: rgba(255, 32, 96, 0.55);
+      --sky:      #00c8ff;
+      --sky-dim:  rgba(0, 200, 255, 0.45);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    /* ── Matrix Canvas ── */
+    canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    /* ── Corner Brackets ── */
+    .corner {
+      position: fixed;
+      width: 48px;
+      height: 48px;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .corner::before,
+    .corner::after {
+      content: '';
+      position: absolute;
+      background: var(--sky);
+      box-shadow: 0 0 10px var(--sky), 0 0 20px var(--sky-dim);
+    }
+    .corner::before { width: 100%; height: 2px; top: 0; left: 0; }
+    .corner::after  { width: 2px; height: 100%; top: 0; left: 0; }
+
+    .corner.tl { top: 24px; left: 24px; }
+    .corner.tr { top: 24px; right: 24px; transform: scaleX(-1); }
+    .corner.bl { bottom: 24px; left: 24px; transform: scaleY(-1); }
+    .corner.br { bottom: 24px; right: 24px; transform: scale(-1); }
+
+    /* ── Content ── */
+    .content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      user-select: none;
+    }
+
+    .error-code {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: clamp(7rem, 25vw, 20rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0.05em;
+      color: var(--pink);
+      text-shadow:
+        0 0 10px var(--pink),
+        0 0 30px var(--pink),
+        0 0 80px var(--pink-dim),
+        0 0 160px var(--pink-dim);
+      animation: flicker 7s infinite;
+      position: relative;
+    }
+
+    /* Glitch layers */
+    .error-code::before,
+    .error-code::after {
+      content: '404';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .error-code::before {
+      color: var(--sky);
+      clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%);
+      animation: glitch-top 4s infinite;
+      text-shadow: none;
+      opacity: 0;
+    }
+    .error-code::after {
+      color: #ff80b0;
+      clip-path: polygon(0 60%, 100% 60%, 100% 80%, 0 80%);
+      animation: glitch-bot 4s infinite;
+      text-shadow: none;
+      opacity: 0;
+    }
+
+    .divider {
+      width: 160px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--sky), transparent);
+      margin: 1.6rem auto;
+      box-shadow: 0 0 10px var(--sky);
+    }
+
+    .subtitle {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: clamp(0.85rem, 2.5vw, 1.2rem);
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: var(--pink);
+      text-shadow: 0 0 12px var(--pink);
+    }
+
+    .hint {
+      margin-top: 1.4rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--sky);
+      opacity: 0.55;
+    }
+
+    /* ── Keyframes ── */
+    @keyframes flicker {
+      0%,  89%, 91%, 93%, 100% { opacity: 1; }
+      90% { opacity: 0.75; }
+      92% { opacity: 0.9; }
+    }
+
+    @keyframes glitch-top {
+      0%,  88%, 100% { opacity: 0; transform: none; }
+      89% { opacity: 0.9; transform: translateX(-4px); }
+      90% { opacity: 0.7; transform: translateX(4px); }
+      91% { opacity: 0; transform: none; }
+    }
+
+    @keyframes glitch-bot {
+      0%,  88%, 100% { opacity: 0; transform: none; }
+      89% { opacity: 0.8; transform: translateX(5px); }
+      90% { opacity: 0.6; transform: translateX(-3px); }
+      91% { opacity: 0; transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="matrix"></canvas>
+
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <div class="content">
+    <div class="error-code">404</div>
+    <div class="divider"></div>
+    <p class="subtitle">Page Not Found</p>
+    <p class="hint">// this node does not exist in the grid</p>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('matrix');
+    const ctx    = canvas.getContext('2d');
+
+    const CHARS = '0123456789ABCDEF[]{}|/<>\\;:.,!?@#$%^&*+=~`';
+    const FONT_SIZE = 15;
+    let cols, drops;
+
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      cols  = Math.floor(canvas.width / FONT_SIZE);
+      drops = Array.from({ length: cols }, () => Math.random() * -(canvas.height / FONT_SIZE));
+    }
+
+    function draw() {
+      // Fade trailing characters
+      ctx.fillStyle = 'rgba(8, 8, 24, 0.055)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.font = FONT_SIZE + 'px "Courier New", monospace';
+
+      for (let i = 0; i < cols; i++) {
+        const char = CHARS[Math.floor(Math.random() * CHARS.length)];
+        const x = i * FONT_SIZE;
+        const y = drops[i] * FONT_SIZE;
+
+        // Brightest head character
+        const isBright = Math.random() > 0.08;
+        ctx.shadowBlur   = isBright ? (Math.random() > 0.8 ? 16 : 6) : 0;
+        ctx.shadowColor  = '#00c8ff';
+        ctx.fillStyle    = isBright
+          ? `rgba(0, 200, 255, ${0.6 + Math.random() * 0.4})`
+          : `rgba(0, 150, 210, 0.3)`;
+
+        ctx.fillText(char, x, y);
+
+        if (y > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i] += 0.35 + Math.random() * 0.35;
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+    setInterval(draw, 48);
+  </script>
+</body>
+</html>
