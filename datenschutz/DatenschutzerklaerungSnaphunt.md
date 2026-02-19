@@ -1,10 +1,14 @@
- Datenschutzerklärung für SnapHunt
-
----
+ ---
 layout: page
 title: "PAGE-TITLE"
 permalink: /datenschutz/SnapHunt
 ---
+ 
+ 
+ 
+# Datenschutzerklärung für SnapHunt
+
+
 
 
 **Stand:** 19.02.2026
